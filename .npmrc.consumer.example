@@ -1,0 +1,6 @@
+# Put this in the .npmrc of any repo that installs @rahulreddy05/spendly-shared
+# (spendly-web, spendly-mobile, spendly-api). GitHub Packages needs a token even
+# to read: a classic PAT with the `read:packages` scope, exported as
+# NODE_AUTH_TOKEN (never commit the token itself).
+@rahulreddy05:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}

@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+// A JSON import instead of node:fs — this package has no Node types, on purpose.
+import pkg from '../package.json' with { type: 'json' };
 
 /**
  * Consumers resolve this package with different conditions: Node ESM and
@@ -7,7 +8,6 @@ import { describe, expect, it } from 'vitest';
  * "default". Every condition must reach the build.
  */
 describe('package.json exports', () => {
-  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const root = pkg.exports['.'];
 
   it('offers types, import and a default fallback', () => {

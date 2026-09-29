@@ -37,7 +37,7 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@rahulreddy05'
       - name: Tag must match package.json version
-        run: test "v$(node -p 'require(\"./package.json\").version')" = "${GITHUB_REF_NAME}"
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
       - run: npm ci
       - run: npm publish
         env:

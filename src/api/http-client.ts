@@ -21,7 +21,7 @@ export interface HttpClientOptions {
   fetch?: typeof fetch;
   refreshTokenStore?: RefreshTokenStore;
   /** Sent as X-Client-* headers so the API can enforce a minimum app version. */
-  client?: { platform: ClientPlatform; version: string };
+  client?: { platform: ClientPlatform; version: string; deviceName?: string };
   /** 'include' on web so the refresh cookie is sent; mobile does not need cookies. */
   credentials?: RequestCredentials;
 }
@@ -49,7 +49,11 @@ export class HttpClient {
     this.store = options.refreshTokenStore ?? cookieRefreshTokenStore;
     this.credentials = options.credentials ?? 'include';
     this.clientHeaders = options.client
-      ? { [CLIENT_HEADER.PLATFORM]: options.client.platform, [CLIENT_HEADER.VERSION]: options.client.version }
+      ? {
+          [CLIENT_HEADER.PLATFORM]: options.client.platform,
+          [CLIENT_HEADER.VERSION]: options.client.version,
+          ...(options.client.deviceName ? { [CLIENT_HEADER.DEVICE_NAME]: options.client.deviceName } : {}),
+        }
       : {};
   }
 

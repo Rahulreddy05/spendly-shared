@@ -14,6 +14,10 @@ describe('package.json exports', () => {
     expect(root).toEqual({ types: './dist/index.d.ts', import: './dist/index.js', default: './dist/index.js' });
   });
 
+  it('lets tools read package.json (e.g. to print the version)', () => {
+    expect(pkg.exports['./package.json']).toBe('./package.json');
+  });
+
   it('lists default last, as resolution is order-sensitive', () => {
     expect(Object.keys(root).at(-1)).toBe('default');
   });

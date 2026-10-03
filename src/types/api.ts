@@ -11,17 +11,61 @@ import type {
   TransactionStatus,
 } from '../constants/accounts.constants.js';
 import type { Category, Direction } from '../constants/categories.constants.js';
+import type { SecurityEventType } from '../constants/security.constants.js';
 
 export interface User {
   id: string;
   email: string;
   displayName: string | null;
+  emailVerified: boolean;
+  mfaEnabled: boolean;
 }
 
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   user: User;
+}
+
+/** Password was right; a second factor is needed to finish signing in. */
+export interface MfaChallenge {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginResult = AuthResponse | MfaChallenge;
+
+/** Exactly one of an authenticator code or a recovery code. */
+export type SecondFactor = { code: string; recoveryCode?: never } | { recoveryCode: string; code?: never };
+
+export interface MfaStatus {
+  enabled: boolean;
+  recoveryCodesRemaining: number;
+}
+
+export interface TotpSetup {
+  /** Base32 secret for typing into an authenticator by hand. */
+  secret: string;
+  /** otpauth:// URI: shown as a QR code on web, opened directly on mobile. */
+  otpauthUrl: string;
+}
+
+export interface DeviceSession {
+  id: string;
+  deviceName: string;
+  platform: string;
+  ipAddress: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  current: boolean;
+}
+
+export interface SecurityEvent {
+  id: string;
+  type: SecurityEventType;
+  deviceName: string | null;
+  ipAddress: string | null;
+  createdAt: string;
 }
 
 export interface Account {

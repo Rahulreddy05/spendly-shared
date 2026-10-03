@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, HttpClient, createSpendlyApi, errorMessage, memoryRefreshTokenStore } from '../src/index.js';
+import { ApiError, HttpClient, createSpendlyApi, errorMessage, isMfaChallenge, memoryRefreshTokenStore } from '../src/index.js';
 import { errorBody, json, recordingFetch, session } from './helpers.js';
 
 function setup(respond: (url: string) => unknown = () => ({})) {
@@ -24,6 +24,69 @@ describe('spendly API contract', () => {
     expect(last()).toMatchObject({ url: '/api/v1/auth/register', body: { displayName: 'A' } });
   });
 
+  it('stops at the 2FA step without storing a session, then finishes it', async () => {
+    const { api, http, store, last } = setup((url) =>
+      url.endsWith('/auth/login') ? { mfaRequired: true, mfaToken: 'challenge' } : session(),
+    );
+    const result = await api.auth.login({ email: 'a@b.co', password: 'p' });
+    expect(isMfaChallenge(result)).toBe(true);
+    expect(http.hasAccessToken()).toBe(false);
+    expect(await store.get()).toBeNull();
+
+    await api.auth.verifyMfa('challenge', { code: '123456' });
+    expect(last()).toMatchObject({ url: '/api/v1/auth/mfa/verify', method: 'POST', body: { mfaToken: 'challenge', code: '123456' } });
+    expect(last().headers.authorization).toBeUndefined();
+    expect(http.hasAccessToken()).toBe(true);
+    expect(await store.get()).toBe('refresh-1');
+
+    await api.auth.verifyMfa('challenge', { recoveryCode: 'ABCD-EFGH' });
+    expect(last().body).toEqual({ mfaToken: 'challenge', recoveryCode: 'ABCD-EFGH' });
+  });
+
+  it('email verification and password flows', async () => {
+    const { api, last } = setup((url) => (url.endsWith('/resend') || url.endsWith('/forgot') ? { sent: true } : null));
+    await api.auth.verifyEmail('123456');
+    expect(last()).toMatchObject({ url: '/api/v1/auth/email/verify', method: 'POST', body: { code: '123456' } });
+    expect(await api.auth.resendVerification()).toEqual({ sent: true });
+    expect(last().url).toBe('/api/v1/auth/email/resend');
+
+    await api.auth.forgotPassword('a@b.co');
+    expect(last()).toMatchObject({ url: '/api/v1/auth/password/forgot', body: { email: 'a@b.co' } });
+    expect(last().headers.authorization).toBeUndefined();
+    await api.auth.resetPassword({ email: 'a@b.co', code: '123456', newPassword: 'n' });
+    expect(last()).toMatchObject({ url: '/api/v1/auth/password/reset', body: { email: 'a@b.co', code: '123456', newPassword: 'n' } });
+    await api.auth.changePassword({ currentPassword: 'c', newPassword: 'n' });
+    expect(last()).toMatchObject({ url: '/api/v1/auth/password/change', body: { currentPassword: 'c', newPassword: 'n' } });
+    await api.auth.reauthenticate('pw', { code: '123456' });
+    expect(last()).toMatchObject({ url: '/api/v1/auth/reauth', body: { password: 'pw', code: '123456' } });
+    await api.auth.reauthenticate('pw');
+    expect(last().body).toEqual({ password: 'pw' });
+  });
+
+  it('two-factor, devices and activity', async () => {
+    const { api, last } = setup((url) => {
+      if (url.endsWith('/auth/mfa')) return { enabled: true, recoveryCodesRemaining: 9 };
+      if (url.endsWith('/setup')) return { setup: { secret: 'S', otpauthUrl: 'otpauth://totp/x' } };
+      if (url.endsWith('/confirm') || url.endsWith('/recovery-codes')) return { recoveryCodes: ['A'] };
+      if (url.endsWith('/auth/sessions')) return { sessions: [{ id: 's1' }] };
+      if (url.endsWith('/security-events')) return { events: [{ id: 'e1' }] };
+      return null;
+    });
+    expect(await api.security.mfaStatus()).toEqual({ enabled: true, recoveryCodesRemaining: 9 });
+    expect(await api.security.setupTotp()).toEqual({ secret: 'S', otpauthUrl: 'otpauth://totp/x' });
+    expect(await api.security.confirmTotp('123456')).toEqual(['A']);
+    expect(last()).toMatchObject({ url: '/api/v1/auth/mfa/totp/confirm', body: { code: '123456' } });
+    expect(await api.security.regenerateRecoveryCodes()).toEqual(['A']);
+    await api.security.disableMfa('pw', { recoveryCode: 'ABCD-EFGH' });
+    expect(last()).toMatchObject({ url: '/api/v1/auth/mfa/disable', body: { password: 'pw', recoveryCode: 'ABCD-EFGH' } });
+    expect(await api.security.sessions()).toEqual([{ id: 's1' }]);
+    await api.security.revokeSession('s 1');
+    expect(last()).toMatchObject({ url: '/api/v1/auth/sessions/s%201', method: 'DELETE' });
+    await api.security.revokeOtherSessions();
+    expect(last()).toMatchObject({ url: '/api/v1/auth/sessions/revoke-others', method: 'POST' });
+    expect(await api.security.events()).toEqual([{ id: 'e1' }]);
+  });
+
   it('logout revokes the stored token and clears the session even if the call fails', async () => {
     const { api, http, store, last } = setup((url) => (url.endsWith('/logout') ? null : session()));
     await api.auth.login({ email: 'a@b.co', password: 'p' });
@@ -45,6 +108,8 @@ describe('spendly API contract', () => {
     expect(last()).toMatchObject({ url: '/api/v1/auth/me', method: 'GET' });
     await api.auth.deleteAccount('pw');
     expect(last()).toMatchObject({ url: '/api/v1/auth/me', method: 'DELETE', body: { password: 'pw' } });
+    await api.auth.deleteAccount('pw', { code: '123456' });
+    expect(last().body).toEqual({ password: 'pw', code: '123456' });
     expect(http.hasAccessToken()).toBe(false);
   });
 

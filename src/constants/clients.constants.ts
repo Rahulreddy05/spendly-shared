@@ -2,6 +2,8 @@
 export const CLIENT_HEADER = {
   PLATFORM: 'x-client-platform',
   VERSION: 'x-client-version',
+  /** Human-readable device name for the sessions list, e.g. "Rahul's iPhone". */
+  DEVICE_NAME: 'x-device-name',
 } as const;
 
 export const CLIENT_PLATFORM = {

@@ -1,6 +1,6 @@
 {
   "name": "@rahulreddy05/spendly-shared",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Spendly code shared by the web app, mobile app and API: types, constants, API client, formatting",
   "type": "module",
   "sideEffects": false,

@@ -19,7 +19,24 @@ describe('formatMoney', () => {
   it('supports signed and compact output', () => {
     expect(formatMoney(-1_250, 'USD', { signed: true })).toBe('-$12.50');
     expect(formatMoney(1_250, 'USD', { signed: true })).toBe('+$12.50');
+    expect(formatMoney(0, 'USD', { signed: true })).toBe('$0.00');
     expect(formatMoney(125_000_000, 'USD', { compact: true })).toBe('$1.3M');
+  });
+
+  it('signs amounts even where Intl ignores signDisplay (React Native / Hermes)', () => {
+    const RealNumberFormat = Intl.NumberFormat;
+    // Simulate an engine without signDisplay support.
+    const HermesLike = function (locale: string, opts: Intl.NumberFormatOptions = {}) {
+      return new RealNumberFormat(locale, { ...opts, signDisplay: undefined });
+    } as unknown as typeof Intl.NumberFormat;
+    Intl.NumberFormat = HermesLike;
+    try {
+      expect(formatMoney(310_000, 'USD', { signed: true })).toBe('+$3,100.00');
+      expect(formatMoney(-1_250, 'USD', { signed: true })).toBe('-$12.50');
+      expect(formatMoney(0, 'USD', { signed: true })).toBe('$0.00');
+    } finally {
+      Intl.NumberFormat = RealNumberFormat;
+    }
   });
 
   it('signs by direction', () => {

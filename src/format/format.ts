@@ -9,13 +9,20 @@ export function formatMoney(
   currency: string = DEFAULT_CURRENCY,
   options: { compact?: boolean; signed?: boolean } = {},
 ): string {
-  return new Intl.NumberFormat(LOCALE, {
+  const formatter = new Intl.NumberFormat(LOCALE, {
     style: 'currency',
     currency,
     notation: options.compact ? 'compact' : 'standard',
     maximumFractionDigits: options.compact ? 1 : 2,
-    signDisplay: options.signed ? 'exceptZero' : 'auto',
-  }).format(cents / CENTS_PER_UNIT);
+  });
+  if (!options.signed) return formatter.format(cents / CENTS_PER_UNIT);
+
+  // The sign is added by hand rather than with Intl's `signDisplay`, which
+  // React Native's Hermes engine ignores (it would drop the "+" on income).
+  const magnitude = formatter.format(Math.abs(cents) / CENTS_PER_UNIT);
+  if (cents > 0) return `+${magnitude}`;
+  if (cents < 0) return `-${magnitude}`;
+  return magnitude;
 }
 
 /** Signed amount for a transaction: money in positive, money out negative. */

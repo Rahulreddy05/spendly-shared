@@ -11,4 +11,5 @@ export * from './api/api-error.js';
 export * from './api/refresh-token-store.js';
 export * from './api/http-client.js';
 export * from './api/spendly-api.js';
+export * from './api/with-reauth.js';
 export * from './format/format.js';

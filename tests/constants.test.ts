@@ -13,6 +13,9 @@ import {
   LAST4_PATTERN,
   MONEY_DATA_QUERY_ROOTS,
   QUERY_KEYS,
+  SECURITY_EVENT,
+  SECURITY_EVENT_LABEL,
+  WARNING_SECURITY_EVENTS,
   isCategoryAllowed,
   providerPath,
 } from '../src/index.js';
@@ -36,6 +39,11 @@ describe('constants', () => {
   it('accepts only four digits as last4', () => {
     expect(LAST4_PATTERN.test('1234')).toBe(true);
     for (const v of ['123', '12345', '12a4', '4111111111111111']) expect(LAST4_PATTERN.test(v)).toBe(false);
+  });
+
+  it('labels every security event and only warns about real ones', () => {
+    for (const type of Object.values(SECURITY_EVENT)) expect(SECURITY_EVENT_LABEL[type]).toBeTruthy();
+    for (const type of WARNING_SECURITY_EVENTS) expect(Object.values(SECURITY_EVENT)).toContain(type);
   });
 
   it('builds query keys and provider paths', () => {

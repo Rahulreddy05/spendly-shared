@@ -5,6 +5,7 @@ export * from './constants/api-paths.constants.js';
 export * from './constants/query-keys.constants.js';
 export * from './constants/errors.constants.js';
 export * from './constants/clients.constants.js';
+export * from './constants/security.constants.js';
 export * from './types/api.js';
 export * from './api/api-error.js';
 export * from './api/refresh-token-store.js';

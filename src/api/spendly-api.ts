@@ -8,16 +8,22 @@ import type {
   ClientConfig,
   CreateAccountInput,
   CreateTransactionInput,
+  DeviceSession,
   LinkSession,
   LinkSessionOptions,
   LoginInput,
+  LoginResult,
   MerchantTotal,
+  MfaStatus,
   ProvidersResponse,
   RegisterInput,
+  SecondFactor,
+  SecurityEvent,
   SyncResult,
   Transaction,
   TransactionFilters,
   TransactionPage,
+  TotpSetup,
   UpdateAccountInput,
   UpdateTransactionInput,
   User,
@@ -28,6 +34,10 @@ import type {
  * Every endpoint Spendly clients call, grouped by resource. Screens never call
  * fetch directly; they use hooks, which use this. Tests swap in a fake.
  */
+/** Narrowing helper: did login stop at the two-factor step? */
+export const isMfaChallenge = (result: LoginResult): result is Extract<LoginResult, { mfaRequired: true }> =>
+  'mfaRequired' in result && result.mfaRequired === true;
+
 export function createSpendlyApi(http: HttpClient) {
   const startSession = async (promise: Promise<AuthResponse>): Promise<AuthResponse> => {
     const session = await promise;
@@ -42,8 +52,20 @@ export function createSpendlyApi(http: HttpClient) {
     auth: {
       register: (input: RegisterInput) =>
         startSession(http.request<AuthResponse>(API_PATHS.AUTH_REGISTER, { method: 'POST', body: input, auth: false })),
-      login: (input: LoginInput) =>
-        startSession(http.request<AuthResponse>(API_PATHS.AUTH_LOGIN, { method: 'POST', body: input, auth: false })),
+      /** Resolves to a session, or to a 2FA challenge to finish with `verifyMfa`. */
+      login: async (input: LoginInput): Promise<LoginResult> => {
+        const result = await http.request<LoginResult>(API_PATHS.AUTH_LOGIN, { method: 'POST', body: input, auth: false });
+        if (!isMfaChallenge(result)) await http.acceptSession(result);
+        return result;
+      },
+      verifyMfa: (mfaToken: string, factor: SecondFactor) =>
+        startSession(
+          http.request<AuthResponse>(API_PATHS.AUTH_MFA_VERIFY, {
+            method: 'POST',
+            body: { mfaToken, ...factor },
+            auth: false,
+          }),
+        ),
       /** Revokes the refresh token server-side, then forgets the session locally either way. */
       logout: async (): Promise<void> => {
         const refreshToken = await http.storedRefreshToken();
@@ -59,11 +81,44 @@ export function createSpendlyApi(http: HttpClient) {
       },
       restoreSession: () => http.refreshSession(),
       me: () => http.request<User>(API_PATHS.AUTH_ME),
-      /** Permanently deletes the account and all its data. */
-      deleteAccount: async (password: string): Promise<void> => {
-        await http.request<void>(API_PATHS.AUTH_ME, { method: 'DELETE', body: { password } });
+      /** Permanently deletes the account and all its data. 2FA users also pass a factor. */
+      deleteAccount: async (password: string, factor?: SecondFactor): Promise<void> => {
+        await http.request<void>(API_PATHS.AUTH_ME, { method: 'DELETE', body: { password, ...factor } });
         await http.clearSession();
       },
+      verifyEmail: (code: string) => http.request<void>(API_PATHS.EMAIL_VERIFY, { method: 'POST', body: { code } }),
+      resendVerification: () => http.request<{ sent: true }>(API_PATHS.EMAIL_RESEND, { method: 'POST' }),
+      /** Always "succeeds", whether or not the email has an account. */
+      forgotPassword: (email: string) =>
+        http.request<{ sent: true }>(API_PATHS.PASSWORD_FORGOT, { method: 'POST', body: { email }, auth: false }),
+      resetPassword: (input: { email: string; code: string; newPassword: string }) =>
+        http.request<void>(API_PATHS.PASSWORD_RESET, { method: 'POST', body: input, auth: false }),
+      changePassword: (input: { currentPassword: string; newPassword: string }) =>
+        http.request<void>(API_PATHS.PASSWORD_CHANGE, { method: 'POST', body: input }),
+      /** Confirms the password (and 2FA) to unlock sensitive actions for a few minutes. */
+      reauthenticate: (password: string, factor?: SecondFactor) =>
+        http.request<void>(API_PATHS.AUTH_REAUTH, { method: 'POST', body: { password, ...factor } }),
+    },
+    security: {
+      mfaStatus: () => http.request<MfaStatus>(API_PATHS.MFA_STATUS),
+      setupTotp: () =>
+        http.request<{ setup: TotpSetup }>(API_PATHS.MFA_TOTP_SETUP, { method: 'POST' }).then((r) => r.setup),
+      /** Turns 2FA on; resolves to recovery codes, which are shown once. */
+      confirmTotp: (code: string) =>
+        http
+          .request<{ recoveryCodes: string[] }>(API_PATHS.MFA_TOTP_CONFIRM, { method: 'POST', body: { code } })
+          .then((r) => r.recoveryCodes),
+      disableMfa: (password: string, factor: SecondFactor) =>
+        http.request<void>(API_PATHS.MFA_DISABLE, { method: 'POST', body: { password, ...factor } }),
+      regenerateRecoveryCodes: () =>
+        http
+          .request<{ recoveryCodes: string[] }>(API_PATHS.MFA_RECOVERY_CODES, { method: 'POST' })
+          .then((r) => r.recoveryCodes),
+      sessions: () =>
+        http.request<{ sessions: DeviceSession[] }>(API_PATHS.SESSIONS).then((r) => r.sessions),
+      revokeSession: (id: string) => http.request<void>(API_PATHS.session(id), { method: 'DELETE' }),
+      revokeOtherSessions: () => http.request<void>(API_PATHS.SESSIONS_REVOKE_OTHERS, { method: 'POST' }),
+      events: () => http.request<{ events: SecurityEvent[] }>(API_PATHS.SECURITY_EVENTS).then((r) => r.events),
     },
     accounts: {
       list: () => http.request<{ accounts: Account[] }>(API_PATHS.ACCOUNTS).then((r) => r.accounts),

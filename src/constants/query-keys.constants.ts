@@ -2,6 +2,10 @@
 export const QUERY_KEYS = {
   me: ['me'] as const,
   clientConfig: ['client-config'] as const,
+  mfaStatus: ['security', 'mfa'] as const,
+  sessions: ['security', 'sessions'] as const,
+  securityEvents: ['security', 'events'] as const,
+  securityRoot: ['security'] as const,
   accounts: ['accounts'] as const,
   providers: ['providers'] as const,
   transactionsRoot: ['transactions'] as const,

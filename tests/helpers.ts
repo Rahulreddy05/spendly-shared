@@ -11,7 +11,7 @@ export const errorBody = (code: string, message = code, details?: unknown) => ({
 export const session = (n = 1) => ({
   accessToken: `access-${n}`,
   refreshToken: `refresh-${n}`,
-  user: { id: 'u1', email: 'a@b.co', displayName: null },
+  user: { id: 'u1', email: 'a@b.co', displayName: null, emailVerified: true, mfaEnabled: false },
 });
 
 /** A fetch mock plus a helper to read what the last call sent. */

@@ -31,6 +31,12 @@ describe('HttpClient requests', () => {
     });
   });
 
+  it('sends the device name when the app provides one', async () => {
+    const rec = recordingFetch(() => json(200, {}));
+    await new HttpClient({ baseUrl: '', fetch: rec.fetch, client: { platform: 'ios', version: '2.0.0', deviceName: "Rahul's iPhone" } }).request('/x');
+    expect(rec.last().headers).toMatchObject({ 'x-device-name': "Rahul's iPhone", 'x-client-platform': 'ios' });
+  });
+
   it("defaults to the browser's cookie strategy", async () => {
     const rec = recordingFetch(() => json(200, {}));
     await new HttpClient({ baseUrl: '', fetch: rec.fetch }).request('/x');

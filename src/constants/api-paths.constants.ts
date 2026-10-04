@@ -28,9 +28,12 @@ export const API_PATHS = {
   ANALYTICS_SUMMARY: '/analytics/summary',
   ANALYTICS_MERCHANTS: '/analytics/merchants',
   CONNECTION_PROVIDERS: '/connections/providers',
-  linkSession: (provider: string) => `/connections/${provider}/sessions`,
-  completeLinkSession: (provider: string, sessionId: string) =>
-    `/connections/${provider}/sessions/${encodeURIComponent(sessionId)}/complete`,
-  refreshAccount: (id: string) => `/connections/accounts/${encodeURIComponent(id)}/refresh`,
+  CONNECTIONS: '/connections',
+  connection: (id: string) => `/connections/${encodeURIComponent(id)}`,
+  linkToken: (provider: string) => `/connections/${provider}/link-token`,
+  exchange: (provider: string) => `/connections/${provider}/exchange`,
+  connectionSync: (id: string) => `/connections/${encodeURIComponent(id)}/sync`,
+  connectionUpdateLinkToken: (id: string) => `/connections/${encodeURIComponent(id)}/update-link-token`,
+  connectionReconnected: (id: string) => `/connections/${encodeURIComponent(id)}/reconnected`,
   CLIENT_CONFIG: '/meta/client-config',
 } as const;

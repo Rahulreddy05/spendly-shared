@@ -6,6 +6,7 @@ import type {
   AccountColor,
   AccountStatus,
   AccountType,
+  ConnectionStatus,
   DataSource,
   ProviderId,
   TransactionStatus,
@@ -150,20 +151,26 @@ export interface MerchantTotal {
   transactionCount: number;
 }
 
-export interface LinkSession {
-  sessionId: string;
-  clientSecret: string;
-  publishableKey: string;
+/** Opens the provider's bank picker (Plaid Link). Single use, expires in hours. */
+export interface LinkToken {
+  linkToken: string;
+  expiration: string;
+}
+
+/** One bank login and the accounts the user shared through it. */
+export interface BankConnection {
+  id: string;
+  provider: ProviderId;
+  institutionName: string | null;
+  status: ConnectionStatus;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  accounts: Account[];
 }
 
 export interface SyncResult {
   upserted: number;
   removed: number;
-}
-
-export interface LinkSessionOptions {
-  /** https URL or spendly:// deep link to return to after bank-app approval. */
-  returnUrl?: string;
 }
 
 export interface ClientConfig {

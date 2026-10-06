@@ -1,4 +1,4 @@
-export const APP_NAME = 'Spendly';
+export const APP_NAME = 'Pennypath';
 
 export const API_VERSION_PATH = '/api/v1';
 

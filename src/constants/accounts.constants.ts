@@ -57,7 +57,7 @@ export const CONNECTION_STATUS_LABEL: Record<ConnectionStatus, string> = {
 
 export const CONNECTION_STATUS_HELP: Record<ConnectionStatus, string> = {
   ACTIVE: 'Transactions update automatically.',
-  LOGIN_REQUIRED: 'Your bank needs you to sign in again before Spendly can update.',
+  LOGIN_REQUIRED: 'Your bank needs you to sign in again before Pennypath can update.',
   DISCONNECTED: 'Access was revoked at your bank. Remove this connection and link it again.',
 };
 

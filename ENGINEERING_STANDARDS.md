@@ -1,6 +1,6 @@
-# Spendly Engineering Standards
+# Pennypath Engineering Standards
 
-These rules apply to **every change** in every Spendly repo (`spendly-api`,
+These rules apply to **every change** in every Pennypath repo (`spendly-api`,
 `spendly-web`, `spendly-mobile`, `spendly-shared`, `spendly-infra`). They are not optional and are not restated in
 task requests — read this file before writing code and check your change
 against the Definition of Done at the bottom before calling it finished.
@@ -11,7 +11,7 @@ The same file lives in each repo. If you change it, change all five.
 
 ## 1. Product
 
-Spendly shows a signed-in user **where their money comes from and where it goes**:
+Pennypath shows a signed-in user **where their money comes from and where it goes**:
 
 - How much came in (income) and how much went out (expenses), per year and month
 - What they spend the most on, and where most of their income comes from

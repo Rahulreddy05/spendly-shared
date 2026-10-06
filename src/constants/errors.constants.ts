@@ -24,7 +24,7 @@ export const ERROR_CODE = {
 } as const;
 
 export const ERROR_MESSAGE = {
-  NETWORK: 'Could not reach Spendly. Check your connection and try again.',
+  NETWORK: 'Could not reach Pennypath. Check your connection and try again.',
   UNKNOWN: 'Something went wrong. Please try again.',
   LINK_CANCELLED: 'Bank linking was cancelled.',
 } as const;

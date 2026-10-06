@@ -1,4 +1,4 @@
-# Spendly Shared
+# Pennypath Shared
 
 @ENGINEERING_STANDARDS.md
 

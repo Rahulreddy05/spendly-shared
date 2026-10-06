@@ -31,7 +31,7 @@ import type {
 } from '../types/api.js';
 
 /**
- * Every endpoint Spendly clients call, grouped by resource. Screens never call
+ * Every endpoint Pennypath clients call, grouped by resource. Screens never call
  * fetch directly; they use hooks, which use this. Tests swap in a fake.
  */
 /** Narrowing helper: did login stop at the two-factor step? */

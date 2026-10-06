@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDate,
+  formatDateTime,
   formatMoney,
   formatPercent,
   groupByMonth,
@@ -67,6 +68,9 @@ describe('dates and labels', () => {
     expect(monthLabel(1)).toBe('Jan');
     expect(monthLabel(13)).toBe('');
     expect(formatDate('2026-03-04T00:00:00.000Z')).toBe('Mar 4, 2026');
+    // Timestamps use the viewer's local clock, so 6:02 PM local stays on that day.
+    const local = new Date(2026, 9, 5, 18, 2).toISOString();
+    expect(formatDateTime(local)).toMatch(/^Oct 5, 2026,? 6:02\sPM$/);
   });
 
   it("uses the local calendar date for today, not UTC's", () => {

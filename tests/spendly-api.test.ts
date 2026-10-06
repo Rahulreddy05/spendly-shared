@@ -173,6 +173,42 @@ describe('spendly API contract', () => {
     expect(last()).toMatchObject({ url: '/api/v1/connections/c1/reconnected', method: 'POST' });
   });
 
+  it('budget endpoints', async () => {
+    const budget = { id: 'b1', category: 'DINING', limitCents: 30_000 };
+    const { api, last } = setup(() => ({ month: '2026-10', budgets: [budget], budget }));
+    expect((await api.budgets.list()).budgets).toEqual([budget]);
+    expect(last()).toMatchObject({ url: '/api/v1/budgets', method: 'GET' });
+    await api.budgets.list('2026-09');
+    expect(last().url).toBe('/api/v1/budgets?month=2026-09');
+
+    expect(await api.budgets.create({ category: 'DINING', limitCents: 30_000 })).toEqual(budget);
+    expect(last()).toMatchObject({ url: '/api/v1/budgets', method: 'POST', body: { category: 'DINING', limitCents: 30_000 } });
+    expect(await api.budgets.update('b/1', 40_000)).toEqual(budget);
+    expect(last()).toMatchObject({ url: '/api/v1/budgets/b%2F1', method: 'PATCH', body: { limitCents: 40_000 } });
+  });
+
+  it('notification endpoints', async () => {
+    const settings = { budgetAlertEmail: false };
+    const { api, last } = setup(() => ({ items: [], unreadCount: 2, settings }));
+    expect(await api.notifications.list()).toEqual({ items: [], unreadCount: 2, settings });
+    expect(last().url).toBe('/api/v1/notifications?limit=20');
+    await api.notifications.list(5);
+    expect(last().url).toBe('/api/v1/notifications?limit=5');
+    expect(await api.notifications.settings()).toEqual(settings);
+    expect(await api.notifications.updateSettings({ budgetAlertEmail: false })).toEqual(settings);
+    expect(last()).toMatchObject({ url: '/api/v1/notifications/settings', method: 'PATCH', body: { budgetAlertEmail: false } });
+  });
+
+  it('marks notifications read and deletes budgets', async () => {
+    const { api, last } = setup(() => null);
+    await api.notifications.markRead('n1');
+    expect(last()).toMatchObject({ url: '/api/v1/notifications/n1/read', method: 'POST' });
+    await api.notifications.markAllRead();
+    expect(last()).toMatchObject({ url: '/api/v1/notifications/read-all', method: 'POST' });
+    await api.budgets.remove('b1');
+    expect(last()).toMatchObject({ url: '/api/v1/budgets/b1', method: 'DELETE' });
+  });
+
   it('removes a connection', async () => {
     const { api, last } = setup(() => null);
     await api.connections.remove('c1');

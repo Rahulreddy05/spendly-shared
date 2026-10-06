@@ -1,6 +1,6 @@
 {
   "name": "@rahulreddy05/spendly-shared",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Pennypath code shared by the web app, mobile app and API: types, constants, API client, formatting",
   "type": "module",
   "sideEffects": false,

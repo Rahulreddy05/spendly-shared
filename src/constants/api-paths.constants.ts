@@ -36,4 +36,10 @@ export const API_PATHS = {
   connectionUpdateLinkToken: (id: string) => `/connections/${encodeURIComponent(id)}/update-link-token`,
   connectionReconnected: (id: string) => `/connections/${encodeURIComponent(id)}/reconnected`,
   CLIENT_CONFIG: '/meta/client-config',
+  BUDGETS: '/budgets',
+  budget: (id: string) => `/budgets/${encodeURIComponent(id)}`,
+  NOTIFICATIONS: '/notifications',
+  notificationRead: (id: string) => `/notifications/${encodeURIComponent(id)}/read`,
+  NOTIFICATIONS_READ_ALL: '/notifications/read-all',
+  NOTIFICATION_SETTINGS: '/notifications/settings',
 } as const;

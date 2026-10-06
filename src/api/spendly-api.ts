@@ -1,11 +1,17 @@
 import type { HttpClient } from './http-client.js';
 import { API_PATHS } from '../constants/api-paths.constants.js';
+import { NOTIFICATIONS_LIST_LIMIT } from '../constants/budgets.constants.js';
 import { INITIAL_SYNC, providerPath, type LinkPlatform, type ProviderId } from '../constants/accounts.constants.js';
 import type { Direction } from '../constants/categories.constants.js';
 import type {
   Account,
   AuthResponse,
   BankConnection,
+  Budget,
+  BudgetsResponse,
+  CreateBudgetInput,
+  NotificationSettings,
+  NotificationsResponse,
   ClientConfig,
   CreateAccountInput,
   CreateTransactionInput,
@@ -177,6 +183,30 @@ export function createSpendlyApi(http: HttpClient) {
           .request<{ connection: BankConnection }>(API_PATHS.connectionReconnected(id), { method: 'POST' })
           .then((r) => r.connection),
       remove: (id: string) => http.request<void>(API_PATHS.connection(id), { method: 'DELETE' }),
+    },
+    budgets: {
+      /** Budgets with spending for `month` ("YYYY-MM"); the API defaults to this month. */
+      list: (month?: string) =>
+        http.request<BudgetsResponse>(API_PATHS.BUDGETS, month ? { query: { month } } : {}),
+      create: (input: CreateBudgetInput) =>
+        http.request<{ budget: Budget }>(API_PATHS.BUDGETS, { method: 'POST', body: input }).then((r) => r.budget),
+      update: (id: string, limitCents: number) =>
+        http
+          .request<{ budget: Budget }>(API_PATHS.budget(id), { method: 'PATCH', body: { limitCents } })
+          .then((r) => r.budget),
+      remove: (id: string) => http.request<void>(API_PATHS.budget(id), { method: 'DELETE' }),
+    },
+    notifications: {
+      list: (limit: number = NOTIFICATIONS_LIST_LIMIT) =>
+        http.request<NotificationsResponse>(API_PATHS.NOTIFICATIONS, { query: { limit } }),
+      markRead: (id: string) => http.request<void>(API_PATHS.notificationRead(id), { method: 'POST' }),
+      markAllRead: () => http.request<void>(API_PATHS.NOTIFICATIONS_READ_ALL, { method: 'POST' }),
+      settings: () =>
+        http.request<{ settings: NotificationSettings }>(API_PATHS.NOTIFICATION_SETTINGS).then((r) => r.settings),
+      updateSettings: (input: Partial<NotificationSettings>) =>
+        http
+          .request<{ settings: NotificationSettings }>(API_PATHS.NOTIFICATION_SETTINGS, { method: 'PATCH', body: input })
+          .then((r) => r.settings),
     },
   };
 }

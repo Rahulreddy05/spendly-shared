@@ -18,6 +18,9 @@ import {
   WARNING_SECURITY_EVENTS,
   isCategoryAllowed,
   providerPath,
+  BUDGETABLE_CATEGORIES,
+  BUDGET_STATUS,
+  BUDGET_STATUS_LABEL,
   CONNECTION_STATUS,
   CONNECTION_STATUS_HELP,
   CONNECTION_STATUS_LABEL,
@@ -48,6 +51,15 @@ describe('constants', () => {
   it('labels every security event and only warns about real ones', () => {
     for (const type of Object.values(SECURITY_EVENT)) expect(SECURITY_EVENT_LABEL[type]).toBeTruthy();
     for (const type of WARNING_SECURITY_EVENTS) expect(Object.values(SECURITY_EVENT)).toContain(type);
+  });
+
+  it('budgets cover spending only and every status has a label', () => {
+    expect(BUDGETABLE_CATEGORIES).not.toContain('TRANSFER');
+    expect(BUDGETABLE_CATEGORIES).not.toContain('SALARY');
+    for (const status of Object.values(BUDGET_STATUS)) expect(BUDGET_STATUS_LABEL[status]).toBeTruthy();
+    expect(QUERY_KEYS.budgets('2026-10')).toEqual(['budgets', '2026-10']);
+    expect(MONEY_DATA_QUERY_ROOTS).toContain(QUERY_KEYS.budgetsRoot);
+    expect(MONEY_DATA_QUERY_ROOTS).toContain(QUERY_KEYS.notifications);
   });
 
   it('labels and explains every connection status', () => {

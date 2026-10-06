@@ -12,6 +12,7 @@ import type {
   TransactionStatus,
 } from '../constants/accounts.constants.js';
 import type { Category, Direction } from '../constants/categories.constants.js';
+import type { BudgetStatus, NotificationType } from '../constants/budgets.constants.js';
 import type { SecurityEventType } from '../constants/security.constants.js';
 
 export interface User {
@@ -224,3 +225,48 @@ export interface TransactionFilters {
 
 export type UpdateAccountInput = Partial<Pick<Account, 'name' | 'color' | 'archived'>>;
 export type UpdateTransactionInput = Partial<CreateTransactionInput>;
+
+/** A monthly limit for one spending category, with this month's progress. */
+export interface Budget {
+  id: string;
+  category: Category;
+  limitCents: number;
+  spentCents: number;
+  /** Negative when over budget. */
+  remainingCents: number;
+  /** e.g. 82.5 */
+  usedPercent: number;
+  status: BudgetStatus;
+}
+
+export interface BudgetsResponse {
+  month: string;
+  budgets: Budget[];
+  totalLimitCents: number;
+  totalSpentCents: number;
+}
+
+export interface CreateBudgetInput {
+  category: Category;
+  limitCents: number;
+}
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  /** For budget alerts: { category, month, threshold }. */
+  data: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  items: AppNotification[];
+  unreadCount: number;
+}
+
+export interface NotificationSettings {
+  budgetAlertEmail: boolean;
+}

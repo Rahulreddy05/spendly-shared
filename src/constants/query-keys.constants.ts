@@ -9,6 +9,10 @@ export const QUERY_KEYS = {
   accounts: ['accounts'] as const,
   providers: ['providers'] as const,
   connections: ['connections'] as const,
+  budgetsRoot: ['budgets'] as const,
+  budgets: (month: string) => ['budgets', month] as const,
+  notifications: ['notifications'] as const,
+  notificationSettings: ['notification-settings'] as const,
   transactionsRoot: ['transactions'] as const,
   transactions: (filters: object) => ['transactions', filters] as const,
   analyticsRoot: ['analytics'] as const,
@@ -21,5 +25,8 @@ export const MONEY_DATA_QUERY_ROOTS = [
   QUERY_KEYS.accounts,
   QUERY_KEYS.connections,
   QUERY_KEYS.transactionsRoot,
+  // Spending changes budgets, and can create budget alerts.
+  QUERY_KEYS.budgetsRoot,
+  QUERY_KEYS.notifications,
   QUERY_KEYS.analyticsRoot,
 ] as const;

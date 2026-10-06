@@ -18,6 +18,10 @@ import {
   WARNING_SECURITY_EVENTS,
   isCategoryAllowed,
   providerPath,
+  CONNECTION_STATUS,
+  CONNECTION_STATUS_HELP,
+  CONNECTION_STATUS_LABEL,
+  LINK_PLATFORM,
 } from '../src/index.js';
 
 describe('constants', () => {
@@ -46,11 +50,20 @@ describe('constants', () => {
     for (const type of WARNING_SECURITY_EVENTS) expect(Object.values(SECURITY_EVENT)).toContain(type);
   });
 
+  it('labels and explains every connection status', () => {
+    for (const status of Object.values(CONNECTION_STATUS)) {
+      expect(CONNECTION_STATUS_LABEL[status]).toBeTruthy();
+      expect(CONNECTION_STATUS_HELP[status]).toBeTruthy();
+    }
+    expect(Object.values(LINK_PLATFORM)).toEqual(['web', 'ios', 'android']);
+  });
+
   it('builds query keys and provider paths', () => {
     expect(QUERY_KEYS.summary(2026)).toEqual(['analytics', 'summary', 2026]);
     expect(QUERY_KEYS.merchants(2026, 'INCOME')).toEqual(['analytics', 'merchants', 2026, 'INCOME']);
     expect(QUERY_KEYS.transactions({ year: 2026 })).toEqual(['transactions', { year: 2026 }]);
     expect(MONEY_DATA_QUERY_ROOTS).toContain(QUERY_KEYS.accounts);
-    expect(providerPath('STRIPE')).toBe('stripe');
+    expect(providerPath('PLAID')).toBe('plaid');
+    expect(MONEY_DATA_QUERY_ROOTS).toContain(QUERY_KEYS.connections);
   });
 });

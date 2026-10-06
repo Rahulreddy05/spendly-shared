@@ -1,6 +1,6 @@
 # spendly-shared
 
-Code shared by every Spendly app — `spendly-web`, `spendly-mobile` (React
+Code shared by every Pennypath app — `spendly-web`, `spendly-mobile` (React
 Native) and `spendly-api` — so there is one source of truth instead of copies.
 
 | Module | What's in it |

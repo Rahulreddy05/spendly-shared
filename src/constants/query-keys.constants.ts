@@ -8,6 +8,7 @@ export const QUERY_KEYS = {
   securityRoot: ['security'] as const,
   accounts: ['accounts'] as const,
   providers: ['providers'] as const,
+  connections: ['connections'] as const,
   transactionsRoot: ['transactions'] as const,
   transactions: (filters: object) => ['transactions', filters] as const,
   analyticsRoot: ['analytics'] as const,
@@ -18,6 +19,7 @@ export const QUERY_KEYS = {
 /** Queries to invalidate after anything that changes money data. */
 export const MONEY_DATA_QUERY_ROOTS = [
   QUERY_KEYS.accounts,
+  QUERY_KEYS.connections,
   QUERY_KEYS.transactionsRoot,
   QUERY_KEYS.analyticsRoot,
 ] as const;

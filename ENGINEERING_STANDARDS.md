@@ -1,6 +1,6 @@
-# Spendly Engineering Standards
+# Pennypath Engineering Standards
 
-These rules apply to **every change** in every Spendly repo (`spendly-api`,
+These rules apply to **every change** in every Pennypath repo (`spendly-api`,
 `spendly-web`, `spendly-mobile`, `spendly-shared`, `spendly-infra`). They are not optional and are not restated in
 task requests — read this file before writing code and check your change
 against the Definition of Done at the bottom before calling it finished.
@@ -11,7 +11,7 @@ The same file lives in each repo. If you change it, change all five.
 
 ## 1. Product
 
-Spendly shows a signed-in user **where their money comes from and where it goes**:
+Pennypath shows a signed-in user **where their money comes from and where it goes**:
 
 - How much came in (income) and how much went out (expenses), per year and month
 - What they spend the most on, and where most of their income comes from
@@ -20,7 +20,7 @@ Spendly shows a signed-in user **where their money comes from and where it goes*
 Data comes from two sources, shown together in the same analytics:
 
 1. **Linked accounts** — pulled from the user's bank through a `BankDataProvider`.
-   Stripe Financial Connections (US banks) is the first provider. Indian banks
+   Plaid (US banks) is the first provider. Indian banks
    (Account Aggregator, e.g. Setu) are planned; adding one must mean adding a new
    provider class and registering it, **not** editing the services that use providers.
 2. **Manual accounts** — cash or anything not linkable; entries typed by the user.
@@ -58,10 +58,10 @@ Every feature is built as if it ships to real users today:
   `service` (business rules) → Prisma. Routes hold no business logic.
 - **Dependency injection via a composition root** (`src/container.ts` on the API).
   Services are classes that receive their dependencies in the constructor.
-  Nothing outside the composition root constructs Prisma, Stripe, or providers.
+  Nothing outside the composition root constructs Prisma, Plaid, or providers.
   This is what makes services unit-testable with fakes.
 - **Strategy + Adapter for external data** — `BankDataProvider` is the interface;
-  `StripeFinancialConnectionsProvider` adapts Stripe to it. Services depend on the
+  `PlaidProvider` adapts Plaid to it. Services depend on the
   interface only. Provider-specific types never leak past the adapter.
 - **Registry (factory)** — `ProviderRegistry` returns the provider for a given id.
 - **Strategy for categorisation** — `TransactionCategorizer` interface; rules live
@@ -83,7 +83,7 @@ Every feature is built as if it ships to real users today:
   formatters, hooks, components) — no network, no database.
 - **Integration tests** for API routes against the real test database
   (`spendly_test`), using `app.inject`.
-- **External services are always faked in tests.** Tests never call Stripe or any
+- **External services are always faked in tests.** Tests never call Plaid or any
   real provider; inject a fake `BankDataProvider` through the container.
 - Test the security rules explicitly: user scoping (user A can never see user B's
   data), validation rejections, webhook signature rejection.
@@ -101,8 +101,8 @@ Every feature is built as if it ships to real users today:
 - Secrets live in `.env` locally and Kubernetes `Secret`s in clusters — never in
   git, images, ConfigMaps, or logs.
 - Web: access token in memory only; never `localStorage`.
-- Stripe keys: test-mode keys (`sk_test_…`) for development. Live keys only in the
-  production Secret.
+- Plaid keys: sandbox keys for development. Production keys only in the
+  production Secret. Bank access tokens are stored encrypted and never sent to clients.
 
 ## 7. Docker and Kubernetes
 

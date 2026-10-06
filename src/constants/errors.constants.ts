@@ -10,6 +10,8 @@ export const ERROR_CODE = {
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   PROVIDER_NOT_CONFIGURED: 'PROVIDER_NOT_CONFIGURED',
   PROVIDER_ERROR: 'PROVIDER_ERROR',
+  BANK_LOGIN_REQUIRED: 'BANK_LOGIN_REQUIRED',
+  CONFLICT: 'CONFLICT',
   UPGRADE_REQUIRED: 'UPGRADE_REQUIRED',
   ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   REAUTH_REQUIRED: 'REAUTH_REQUIRED',
@@ -22,7 +24,7 @@ export const ERROR_CODE = {
 } as const;
 
 export const ERROR_MESSAGE = {
-  NETWORK: 'Could not reach Spendly. Check your connection and try again.',
+  NETWORK: 'Could not reach Pennypath. Check your connection and try again.',
   UNKNOWN: 'Something went wrong. Please try again.',
   LINK_CANCELLED: 'Bank linking was cancelled.',
 } as const;

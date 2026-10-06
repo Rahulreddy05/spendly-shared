@@ -27,7 +27,7 @@ export interface HttpClientOptions {
 }
 
 /**
- * Typed fetch wrapper used by every Spendly client. The access token lives only
+ * Typed fetch wrapper used by every Pennypath client. The access token lives only
  * in memory; the refresh token lives wherever the platform's
  * `RefreshTokenStore` keeps it.
  */

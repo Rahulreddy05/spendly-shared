@@ -8,7 +8,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/index.ts', 'src/types/**'],
       reporter: ['text-summary', 'text'],
-      // Do not lower these. This package is used by every Spendly app.
+      // Do not lower these. This package is used by every Pennypath app.
       thresholds: { lines: 95, functions: 95, statements: 95, branches: 90 },
     },
   },

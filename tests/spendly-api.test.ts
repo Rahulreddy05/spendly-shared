@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { ApiError, HttpClient, createSpendlyApi, errorMessage, isMfaChallenge, memoryRefreshTokenStore } from '../src/index.js';
+import { describe, expect, it, vi } from 'vitest';
+import { ApiError, HttpClient, createSpendlyApi, errorMessage, isMfaChallenge, memoryRefreshTokenStore, waitForInitialSync } from '../src/index.js';
 import { errorBody, json, recordingFetch, session } from './helpers.js';
 
 function setup(respond: (url: string) => unknown = () => ({})) {
@@ -150,20 +150,60 @@ describe('spendly API contract', () => {
     expect(last().url).toBe('/api/v1/analytics/merchants?year=2026&direction=EXPENSE&limit=5');
   });
 
-  it('connection endpoints, including the mobile return URL', async () => {
-    const { api, last } = setup(() => ({ providers: ['STRIPE'], session: 's', accounts: ['a'], sync: { upserted: 1, removed: 0 } }));
-    expect(await api.connections.providers()).toEqual(['STRIPE']);
-    expect(await api.connections.startLink('STRIPE')).toBe('s');
-    expect(last()).toMatchObject({ url: '/api/v1/connections/stripe/sessions', method: 'POST', body: undefined });
-    await api.connections.startLink('STRIPE', { returnUrl: 'spendly://link-complete' });
-    expect(last().body).toEqual({ returnUrl: 'spendly://link-complete' });
-    expect(await api.connections.completeLink('STRIPE', 'fcsess/1')).toEqual(['a']);
-    expect(last().url).toBe('/api/v1/connections/stripe/sessions/fcsess%2F1/complete');
-    expect(await api.connections.refreshAccount('acc1')).toEqual({ upserted: 1, removed: 0 });
+  it('connection endpoints', async () => {
+    const link = { linkToken: 'link-1', expiration: 'e' };
+    const { api, last } = setup(() => ({ providers: ['PLAID'], connections: ['c'], link, connection: 'c1', sync: { upserted: 1, removed: 0 } }));
+    expect(await api.connections.providers()).toEqual(['PLAID']);
+    expect(await api.connections.list()).toEqual(['c']);
+    expect(last()).toMatchObject({ url: '/api/v1/connections', method: 'GET' });
+
+    expect(await api.connections.createLinkToken('PLAID', 'ios')).toEqual(link);
+    expect(last()).toMatchObject({ url: '/api/v1/connections/plaid/link-token', method: 'POST', body: { platform: 'ios' } });
+
+    expect(await api.connections.exchange('PLAID', 'public-1')).toBe('c1');
+    expect(last()).toMatchObject({ url: '/api/v1/connections/plaid/exchange', method: 'POST', body: { publicToken: 'public-1' } });
+
+    expect(await api.connections.sync('id/1')).toEqual({ upserted: 1, removed: 0 });
+    expect(last()).toMatchObject({ url: '/api/v1/connections/id%2F1/sync', method: 'POST' });
+
+    expect(await api.connections.createUpdateLinkToken('c1', 'web')).toEqual(link);
+    expect(last()).toMatchObject({ url: '/api/v1/connections/c1/update-link-token', body: { platform: 'web' } });
+
+    expect(await api.connections.markReconnected('c1')).toBe('c1');
+    expect(last()).toMatchObject({ url: '/api/v1/connections/c1/reconnected', method: 'POST' });
+  });
+
+  it('removes a connection', async () => {
+    const { api, last } = setup(() => null);
+    await api.connections.remove('c1');
+    expect(last()).toMatchObject({ url: '/api/v1/connections/c1', method: 'DELETE' });
   });
 
   it('errorMessage shows API messages and hides anything else', () => {
     expect(errorMessage(new ApiError(400, 'X', 'Nice message'))).toBe('Nice message');
     expect(errorMessage(new Error('stack trace detail'))).toBe('Something went wrong. Please try again.');
+  });
+});
+
+describe('waitForInitialSync', () => {
+  const api = (results: number[]) => {
+    const sync = vi.fn(async () => ({ upserted: results.shift() ?? 0, removed: 0 }));
+    return { sync, api: { connections: { sync } } as unknown as Parameters<typeof waitForInitialSync>[0] };
+  };
+  const sleep = vi.fn(async () => undefined);
+
+  it('retries until the bank has history ready', async () => {
+    const { api: a, sync } = api([0, 0, 12]);
+    expect(await waitForInitialSync(a, 'c1', { sleep, intervalMs: 10 })).toBe(12);
+    expect(sync).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledWith(10);
+  });
+
+  it('gives up after the allowed attempts without a final sleep', async () => {
+    sleep.mockClear();
+    const { api: a, sync } = api([]);
+    expect(await waitForInitialSync(a, 'c1', { sleep, attempts: 3 })).toBe(0);
+    expect(sync).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledTimes(2);
   });
 });

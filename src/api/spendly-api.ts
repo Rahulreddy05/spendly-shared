@@ -1,16 +1,16 @@
 import type { HttpClient } from './http-client.js';
 import { API_PATHS } from '../constants/api-paths.constants.js';
-import { providerPath, type ProviderId } from '../constants/accounts.constants.js';
+import { INITIAL_SYNC, providerPath, type LinkPlatform, type ProviderId } from '../constants/accounts.constants.js';
 import type { Direction } from '../constants/categories.constants.js';
 import type {
   Account,
   AuthResponse,
+  BankConnection,
   ClientConfig,
   CreateAccountInput,
   CreateTransactionInput,
   DeviceSession,
-  LinkSession,
-  LinkSessionOptions,
+  LinkToken,
   LoginInput,
   LoginResult,
   MerchantTotal,
@@ -31,7 +31,7 @@ import type {
 } from '../types/api.js';
 
 /**
- * Every endpoint Spendly clients call, grouped by resource. Screens never call
+ * Every endpoint Pennypath clients call, grouped by resource. Screens never call
  * fetch directly; they use hooks, which use this. Tests swap in a fake.
  */
 /** Narrowing helper: did login stop at the two-factor step? */
@@ -152,23 +152,60 @@ export function createSpendlyApi(http: HttpClient) {
     },
     connections: {
       providers: () => http.request<ProvidersResponse>(API_PATHS.CONNECTION_PROVIDERS).then((r) => r.providers),
-      startLink: (provider: ProviderId, options: LinkSessionOptions = {}) =>
+      list: () => http.request<{ connections: BankConnection[] }>(API_PATHS.CONNECTIONS).then((r) => r.connections),
+      createLinkToken: (provider: ProviderId, platform: LinkPlatform) =>
         http
-          .request<{ session: LinkSession }>(API_PATHS.linkSession(providerPath(provider)), {
-            method: 'POST',
-            ...(options.returnUrl ? { body: { returnUrl: options.returnUrl } } : {}),
-          })
-          .then((r) => r.session),
-      completeLink: (provider: ProviderId, sessionId: string) =>
+          .request<{ link: LinkToken }>(API_PATHS.linkToken(providerPath(provider)), { method: 'POST', body: { platform } })
+          .then((r) => r.link),
+      /** Hands the SDK's one-time token to the API, which links the bank and imports history. */
+      exchange: (provider: ProviderId, publicToken: string) =>
         http
-          .request<{ accounts: Account[] }>(API_PATHS.completeLinkSession(providerPath(provider), sessionId), {
+          .request<{ connection: BankConnection }>(API_PATHS.exchange(providerPath(provider)), {
             method: 'POST',
+            body: { publicToken },
           })
-          .then((r) => r.accounts),
-      refreshAccount: (id: string) =>
-        http.request<{ sync: SyncResult }>(API_PATHS.refreshAccount(id), { method: 'POST' }).then((r) => r.sync),
+          .then((r) => r.connection),
+      sync: (id: string) =>
+        http.request<{ sync: SyncResult }>(API_PATHS.connectionSync(id), { method: 'POST' }).then((r) => r.sync),
+      /** Link token for "Fix connection": the user signs in to the bank again. */
+      createUpdateLinkToken: (id: string, platform: LinkPlatform) =>
+        http
+          .request<{ link: LinkToken }>(API_PATHS.connectionUpdateLinkToken(id), { method: 'POST', body: { platform } })
+          .then((r) => r.link),
+      markReconnected: (id: string) =>
+        http
+          .request<{ connection: BankConnection }>(API_PATHS.connectionReconnected(id), { method: 'POST' })
+          .then((r) => r.connection),
+      remove: (id: string) => http.request<void>(API_PATHS.connection(id), { method: 'DELETE' }),
     },
   };
 }
 
 export type SpendlyApi = ReturnType<typeof createSpendlyApi>;
+
+export interface InitialSyncOptions {
+  attempts?: number;
+  intervalMs?: number;
+  /** Injectable for tests. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * The bank may still be preparing history right after linking, so the first
+ * sync can come back empty. Retries until something arrives or attempts run
+ * out (webhooks pick up anything later). Returns how many transactions arrived.
+ */
+export async function waitForInitialSync(
+  api: Pick<SpendlyApi, 'connections'>,
+  connectionId: string,
+  { attempts = INITIAL_SYNC.ATTEMPTS, intervalMs = INITIAL_SYNC.INTERVAL_MS, sleep = defaultSleep }: InitialSyncOptions = {},
+): Promise<number> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const { upserted } = await api.connections.sync(connectionId);
+    if (upserted > 0 || attempt === attempts) return upserted;
+    await sleep(intervalMs);
+  }
+  return 0;
+}

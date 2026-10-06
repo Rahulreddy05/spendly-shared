@@ -44,6 +44,21 @@ export function formatDate(iso: string): string {
 }
 
 /**
+ * A moment in time (createdAt, lastUsedAt) in the viewer's own time zone, e.g.
+ * "Oct 5, 2026, 6:02 PM". Use formatDate for transaction dates instead, which
+ * are calendar dates with no time zone.
+ */
+export function formatDateTime(iso: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(iso));
+}
+
+/**
  * Parses a user-typed amount ("12.50", "$1,200") into integer cents without
  * floating-point rounding. Returns null for anything that is not money.
  */
